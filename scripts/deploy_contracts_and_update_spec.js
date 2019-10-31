@@ -7,7 +7,7 @@ const path = require('path');
 const Web3 = require('web3');
 const utils = require('./utils/utils');
 
-const MIN_DEPLOYER_BALANCE_WEI = '1000000000000000000'; // wild guess: 1 native token
+const MIN_DEPLOYER_BALANCE_WEI = '1000000000000000000'; // wild guess for gas costs: 1 native token
 const GAS_PRICE = process.env.GAS_PRICE || 100000000000; // 100 Gwei
 const GAS_LIMIT = process.env.GAS_LIMIT || 6000000; // 6 MGas
 
@@ -15,8 +15,6 @@ main();
 
 async function main() {
   const rpcUrl = process.env.RPC_URL || "http://localhost:8545";
-  const networkName = process.env.NETWORK_NAME;
-  const networkID = process.env.NETWORK_ID;
   const owner = process.env.OWNER.trim();
   let initialValidators = process.env.INITIAL_VALIDATORS.split(',');
   for (let i = 0; i < initialValidators.length; i++) {
@@ -32,9 +30,8 @@ async function main() {
   const collectRoundLength = process.env.COLLECT_ROUND_LENGTH;
   const erc20Restricted = process.env.ERC20_RESTRICTED === 'true';
 
-  // additional vars for supporting the forking case
-  const templateSpecFile = process.env.TEMPLATE_SPEC_FILE || 'spec.json';
-  const forkBlock = process.env.FORK_BLOCK || 0;
+  const specFile = process.env.SPEC_FILE;
+  const forkBlock = parseInt(process.env.FORK_BLOCK);
 
   const contracts = {
     ValidatorSetAuRa: { withProxy: true},
@@ -49,12 +46,15 @@ async function main() {
     InitializerAuRa: { skipDeploy: true},
   };
 
+  let spec = JSON.parse(fs.readFileSync(path.join(__dirname, '..', specFile), 'UTF-8'));
+  const networkId = spec.params.networkID;
+
   const web3 = new Web3(rpcUrl);
 
   // preliminary checks: can connect, networkID matches, primary account set, unlocked and funded
   const connectedNetworkId = await web3.eth.net.getId();
-  if (connectedNetworkId !== parseInt(networkID)) {
-    console.error(`networkId mismatch: configured for ${networkID}, connected rpc node reports ${connectedNetworkId}. Aborting.`);
+  if (connectedNetworkId !== parseInt(networkId)) {
+    console.error(`networkId mismatch: configured for ${networkId}, connected rpc node reports ${connectedNetworkId}. Aborting.`);
     process.exit(1);
   }
   const nodeAccs = await web3.eth.getAccounts();
@@ -62,7 +62,7 @@ async function main() {
     console.error('no account found on connected node');
     process.exit(2);
   }
-  const deployerAddr = nodeAccs[0];
+  const deployerAddr = process.env.DEPLOYER_ADDR || nodeAccs[0];
   const deployerBalanceWei = await web3.eth.getBalance(deployerAddr);
   const deployerBalanceEth = web3.utils.fromWei(deployerBalanceWei);
   if (parseInt(deployerBalanceWei) < parseInt(MIN_DEPLOYER_BALANCE_WEI)) {
@@ -76,11 +76,6 @@ async function main() {
 
   const sendOpts = { from: deployerAddr, gasPrice: GAS_PRICE, gas: GAS_LIMIT };
 
-  let spec = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'templates', templateSpecFile), 'UTF-8'));
-
-  spec.name = networkName;
-  spec.params.networkID = networkID;
-
   // compile contracts...
   for (let i = 0; i < Object.keys(contracts).length; i++) {
     const name = Object.keys(contracts)[i];
@@ -89,15 +84,23 @@ async function main() {
 
     if (name == 'AdminUpgradeabilityProxy') {
       dir = 'contracts/upgradeability/';
-    } else if (name == 'StakingAuRa' && erc20Restricted) {
-      realContractName = 'StakingAuRaCoins';
+    } else if (name == 'StakingAuRa') {
       dir = 'contracts/base/';
-    } else if (name == 'BlockRewardAuRa' && erc20Restricted) {
-      realContractName = 'BlockRewardAuRaCoins';
+      if (erc20Restricted) {
+        realContractName = 'StakingAuRaCoins';
+      } else {
+        realContractName = 'StakingAuRaTokens';
+      }
+    } else if (name == 'BlockRewardAuRa') {
       dir = 'contracts/base/';
+      if (erc20Restricted) {
+        realContractName = 'BlockRewardAuRaCoins';
+      } else {
+        realContractName = 'BlockRewardAuRaTokens';
+      }
     }
 
-    console.log(`Compiling ${name}...`);
+    console.log(`Compiling ${realContractName}...`);
     const compiled = await compile(
       path.join(__dirname, '..', dir),
       realContractName
