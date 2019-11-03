@@ -191,18 +191,6 @@ async function main() {
   };
   spec.params.registrar = '0x6000000000000000000000000000000000000000';
 
-  // Build KeyGenHistory contract
-  contract = new web3.eth.Contract(contractsCompiled['KeyGenHistory'].abi);
-  deploy = await contract.deploy({data: '0x' + contractsCompiled['KeyGenHistory'].bytecode, arguments: [
-      [],
-      [],
-      []
-    ]});
-  spec.accounts['0x7000000000000000000000000000000000000000'] = {
-    balance: '0',
-    constructor: await deploy.encodeABI()
-  };
-
   // Build InitializerAuRa contract
   contract = new web3.eth.Contract(contractsCompiled['InitializerAuRa'].abi);
   deploy = await contract.deploy({data: '0x' + contractsCompiled['InitializerAuRa'].bytecode, arguments: [
@@ -226,6 +214,18 @@ async function main() {
       collectRoundLength // _collectRoundLength
     ]});
   spec.accounts['0x7000000000000000000000000000000000000000'] = {
+    balance: '0',
+    constructor: await deploy.encodeABI()
+  };
+
+  // Build KeyGenHistory contract
+  contract = new web3.eth.Contract(contractsCompiled['KeyGenHistory'].abi);
+  deploy = await contract.deploy({data: '0x' + contractsCompiled['KeyGenHistory'].bytecode, arguments: [
+      [],
+      [],
+      []
+    ]});
+  spec.accounts['0x8000000000000000000000000000000000000000'] = {
     balance: '0',
     constructor: await deploy.encodeABI()
   };
