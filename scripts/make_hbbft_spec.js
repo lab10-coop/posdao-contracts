@@ -44,7 +44,8 @@ async function main() {
     'StakingAuRa',
     'TxPermission',
     'ValidatorSetAuRa',
-    'KeyGenHistory'
+    'KeyGenHistory',
+    'ValidatorSetHbbftMock'
   ];
 
   let spec = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'templates', 'hbbft_dev.json'), 'UTF-8'));
@@ -226,6 +227,16 @@ async function main() {
       [[[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,145,0,0,0,0,0,0,0,4,239,1,112,13,13,251,103,186,212,78,44,47,250,221,84,118,88,7,64,206,186,11,2,8,204,140,106,179,52,251,237,19,53,74,187,217,134,94,66,68,89,42,85,207,155,220,101,223,51,199,37,38,203,132,13,77,78,114,53,219,114,93,21,25,164,12,43,252,160,16,23,111,79,230,121,95,223,174,211,172,231,0,52,25,49,152,79,128,39,117,216,85,201,237,242,151,219,149,214,77,233,145,47,10,184,175,162,174,237,177,131,45,126,231,32,147,227,170,125,133,36,123,164,232,129,135,196,136,186,45,73,226,179,169,147,42,41,140,202,191,12,73,146,2]]]
     ]});
   spec.accounts['0x8000000000000000000000000000000000000000'] = {
+    balance: '0',
+    constructor: await deploy.encodeABI()
+  };
+
+  // Build ValidatorSetHbbftMock contract
+  contract = new web3.eth.Contract(contractsCompiled['ValidatorSetHbbftMock'].abi);
+  deploy = await contract.deploy({data: '0x' + contractsCompiled['ValidatorSetHbbftMock'].bytecode, arguments: [
+      ['0x1000000000000000000000000000000000000000']
+    ]});
+  spec.accounts['0x9000000000000000000000000000000000000000'] = {
     balance: '0',
     constructor: await deploy.encodeABI()
   };
