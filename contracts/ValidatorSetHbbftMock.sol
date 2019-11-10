@@ -6,14 +6,19 @@ import './ValidatorSetHbbft.sol';
 /// @dev mock contract
 contract ValidatorSetHbbftMock is ValidatorSetHbbft {
 
-    mapping(address => bytes32[2]) public validatorPubkeys;
+    struct ValidatorHbbftData {
+        bytes32 pubkey_high;
+        bytes32 pubkey_low;
+    }
+
+    mapping(address => ValidatorHbbftData) public validatorPubkeys;
 
     function finalizeChange() external onlySystem {
         _currentValidators = _pendingValidators;
         delete _pendingValidators;
     }
 
-    constructor(address[] memory _validators, bytes32[2][] memory _pubkeys) public {
+    constructor(address[] memory _validators, ValidatorHbbftData[] memory _pubkeys) public {
         _currentValidators = _validators;
         for (uint256 i = 0; i < _validators.length; i++) {
             validatorPubkeys[_validators[i]] = _pubkeys[i];

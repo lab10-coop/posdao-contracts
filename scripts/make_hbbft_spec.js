@@ -234,9 +234,13 @@ async function main() {
   // Build ValidatorSetHbbftMock contract
   contract = new web3.eth.Contract(contractsCompiled['ValidatorSetHbbftMock'].abi);
   deploy = await contract.deploy({data: '0x' + contractsCompiled['ValidatorSetHbbftMock'].bytecode, arguments: [
-      ['0x1000000000000000000000000000000000000000'],
-      [['0x7ea354ddd9c3cba09834bea8c88da005d5700231a048f2b047346c4e947e1ded', 
-        '0xc7d8aaf692ce1f9e9b266a4b1fc572ffe4105394822cb10462d50629d3f2e0e2']]
+      ['0x896997c606a0abe1080f2c5535219cbd1c6d81d6'],
+      [
+        {
+          pubkey_high: '0x7ea354ddd9c3cba09834bea8c88da005d5700231a048f2b047346c4e947e1ded',
+          pubkey_low:'0xc7d8aaf692ce1f9e9b266a4b1fc572ffe4105394822cb10462d50629d3f2e0e2'
+        }
+      ]
     ]});
   spec.accounts['0x9000000000000000000000000000000000000000'] = {
     balance: '0',
