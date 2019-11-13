@@ -1,4 +1,4 @@
-pragma solidity 0.5.9;
+pragma solidity 0.5.10;
 
 // implements the Blockreward Interface as specified in https://wiki.parity.io/Block-Reward-Contract.html
 // does nothing except making sure that calls of the reward function don't fail.

@@ -1,4 +1,4 @@
-pragma solidity 0.5.9;
+pragma solidity 0.5.10;
 
 // implements the ValidatorSet Interface as specified in https://wiki.parity.io/Validator-Set.html#non-reporting-contract
 // takes a set of validators on initialization and just keeps those.
