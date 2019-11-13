@@ -1,4 +1,4 @@
-pragma solidity 0.5.9;
+pragma solidity 0.5.10;
 
 import "./interfaces/IRandomAuRa.sol";
 import "./interfaces/IStakingAuRa.sol";
@@ -97,7 +97,7 @@ contract TxPermission is UpgradeableOwned, ITxPermission {
 
     /// @dev Returns the contract's version number needed for node's engine.
     function contractVersion() public pure returns(uint256) {
-        return 0xfffffffffffffffe;
+        return 3;
     }
 
     /// @dev Returns the list of addresses allowed to initiate transactions of any type.

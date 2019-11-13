@@ -1,4 +1,4 @@
-pragma solidity 0.5.9;
+pragma solidity 0.5.10;
 
 import "./interfaces/IBlockRewardAuRa.sol";
 import "./interfaces/IRandomAuRa.sol";
@@ -30,6 +30,8 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
     bool internal _pendingValidatorsChanged;
     bool internal _pendingValidatorsChangedForNewEpoch;
 
+    mapping(address => mapping(uint256 => address[])) internal _maliceReportedForBlock;
+
     /// @dev How many times a given mining address was banned.
     mapping(address => uint256) public banCounter;
 
@@ -58,10 +60,6 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
     /// @dev A boolean flag indicating whether the specified mining address was a validator in the previous set.
     /// See the `getPreviousValidators` getter.
     mapping(address => bool) public isValidatorPrevious;
-
-    /// @dev An array of the validators (their mining addresses) which reported that the specified malicious
-    /// validator (mining address) misbehaved at the specified block.
-    mapping(address => mapping(uint256 => address[])) public maliceReportedForBlock;
 
     /// @dev A mining address bound to a specified staking address.
     /// See the `_setStakingAddress` internal function.
@@ -344,7 +342,7 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
             return;
         }
 
-        address[] storage reportedValidators = maliceReportedForBlock[_maliciousMiningAddress][_blockNumber];
+        address[] storage reportedValidators = _maliceReportedForBlock[_maliciousMiningAddress][_blockNumber];
 
         reportedValidators.push(reportingMiningAddress);
 
@@ -493,6 +491,14 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
         return false;
     }
 
+    /// @dev Returns an array of the validators (their mining addresses) which reported that the specified malicious
+    /// validator misbehaved at the specified block.
+    /// @param _miningAddress The mining address of malicious validator.
+    /// @param _blockNumber The block number.
+    function maliceReportedForBlock(address _miningAddress, uint256 _blockNumber) public view returns(address[] memory) {
+        return _maliceReportedForBlock[_miningAddress][_blockNumber];
+    }
+
     /// @dev Returns whether the `reportMalicious` function can be called by the specified validator with the
     /// given parameters. Used by the `reportMalicious` function and `TxPermission` contract. Also, returns
     /// a boolean flag indicating whether the reporting validator should be removed as malicious due to
@@ -540,7 +546,7 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
             return (false, false); // avoid reporting about ancient blocks
         }
 
-        address[] storage reportedValidators = maliceReportedForBlock[_maliciousMiningAddress][_blockNumber];
+        address[] storage reportedValidators = _maliceReportedForBlock[_maliciousMiningAddress][_blockNumber];
 
         // Don't allow reporting validator to report about the same misbehavior more than once
         uint256 length = reportedValidators.length;
@@ -656,11 +662,6 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
             return false;
         }
 
-        if (_pendingValidators.length < 2) {
-            // If the removed validator is one and only in the validator set, don't let remove them
-            return false;
-        }
-
         bool isBanned = isValidatorBanned(_miningAddress);
 
         // Ban the malicious validator for the next 3 months
@@ -678,10 +679,17 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
         // Remove malicious validator from the `pools`
         stakingContract.removePool(stakingAddress);
 
-        for (uint256 i = 0; i < _pendingValidators.length; i++) {
+        uint256 length = _pendingValidators.length;
+
+        if (length == 1) {
+            // If the removed validator is one and only in the validator set, don't let remove them
+            return false;
+        }
+
+        for (uint256 i = 0; i < length; i++) {
             if (_pendingValidators[i] == _miningAddress) {
                 // Remove the malicious validator from `_pendingValidators`
-                _pendingValidators[i] = _pendingValidators[_pendingValidators.length - 1];
+                _pendingValidators[i] = _pendingValidators[length - 1];
                 _pendingValidators.length--;
                 return true;
             }
@@ -735,16 +743,47 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
     function _setPendingValidators(
         address[] memory _stakingAddresses
     ) internal {
-        if (_stakingAddresses.length == 0 && unremovableValidator == address(0)) return;
+        address unremovableMiningAddress = miningByStakingAddress[unremovableValidator];
 
-        delete _pendingValidators;
+        if (_stakingAddresses.length == 0) {
+            // If there are no `poolsToBeElected`, we remove the
+            // validators which want to exit from the validator set
+            for (uint256 i = 0; i < _pendingValidators.length; i++) {
+                address pvMiningAddress = _pendingValidators[i];
+                if (pvMiningAddress == unremovableMiningAddress) {
+                    continue; // don't touch unremovable validator
+                }
+                address pvStakingAddress = stakingByMiningAddress[pvMiningAddress];
+                if (
+                    stakingContract.isPoolActive(pvStakingAddress) &&
+                    stakingContract.orderedWithdrawAmount(pvStakingAddress, pvStakingAddress) == 0
+                ) {
+                    // The validator has an active pool and is not going to withdraw their
+                    // entire stake, so this validator doesn't want to exit from the validator set
+                    continue;
+                }
+                if (_pendingValidators.length == 1) {
+                    break; // don't remove one and only validator
+                }
+                // Remove the validator
+                _pendingValidators[i] = _pendingValidators[_pendingValidators.length - 1];
+                _pendingValidators.length--;
+                i--;
+            }
+        } else {
+            // If there are some `poolsToBeElected`, we remove all
+            // validators which are not in the `poolsToBeElected` or
+            // not selected by randomness
+            delete _pendingValidators;
 
-        if (unremovableValidator != address(0)) {
-            _pendingValidators.push(miningByStakingAddress[unremovableValidator]);
-        }
+            if (unremovableMiningAddress != address(0)) {
+                // Keep unremovable validator
+                _pendingValidators.push(unremovableMiningAddress);
+            }
 
-        for (uint256 i = 0; i < _stakingAddresses.length; i++) {
-            _pendingValidators.push(miningByStakingAddress[_stakingAddresses[i]]);
+            for (uint256 i = 0; i < _stakingAddresses.length; i++) {
+                _pendingValidators.push(miningByStakingAddress[_stakingAddresses[i]]);
+            }
         }
     }
 

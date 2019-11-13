@@ -1,4 +1,4 @@
-pragma solidity 0.5.9;
+pragma solidity 0.5.10;
 
 import "../interfaces/IBlockRewardAuRa.sol";
 import "../interfaces/IERC677Minting.sol";
@@ -174,7 +174,6 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// @param _receiver The address for which the `_amount` of native coins must be minted.
     function addExtraReceiver(uint256 _amount, address _receiver) external onlyErcToNativeBridge {
         require(_amount != 0);
-        require(_receiver != address(0));
         require(_queueERInitialized);
         _enqueueExtraReceiver(_amount, _receiver, msg.sender);
         emit AddedReceiver(_amount, _receiver, msg.sender);
