@@ -59,6 +59,13 @@ module.exports = {
       network_id: "*" // Match any network id
     },
 
+    dev_rpc: {
+      host: "localhost",
+      port: 8541,
+      gas: 7000000,
+      network_id: "*" // Match any network id
+    },
+
     test: {
       host: "localhost",
       port: 8544,
