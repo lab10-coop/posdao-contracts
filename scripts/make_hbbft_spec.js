@@ -39,7 +39,7 @@ async function main() {
     'BlockRewardAuRa',
     'Certifier',
     'InitializerAuRa',
-    'RandomAuRa',
+    'RandomHbbft',
     'Registry',
     'StakingAuRa',
     'TxPermission',
@@ -133,7 +133,7 @@ async function main() {
     constructor: '0x' + contractsCompiled['BlockRewardAuRa'].bytecode
   };
 
-  // Build RandomAuRa contract
+  // Build RandomHbbft contract
   deploy = await contract.deploy({data: '0x' + storageProxyCompiled.bytecode, arguments: [
       '0x3000000000000000000000000000000000000000', // implementation address
       owner,
@@ -145,7 +145,7 @@ async function main() {
   };
   spec.accounts['0x3000000000000000000000000000000000000000'] = {
     balance: '0',
-    constructor: '0x' + contractsCompiled['RandomAuRa'].bytecode
+    constructor: '0x' + contractsCompiled['RandomHbbft'].bytecode
   };
   spec.engine.hbbft.params.randomnessContractAddress = RANDOM_CONTRACT;
 
