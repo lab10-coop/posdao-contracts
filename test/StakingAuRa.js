@@ -58,7 +58,40 @@ contract('StakingAuRa', async accounts => {
     ).should.be.fulfilled;
   });
 
-  describe('addPool()', async () => {
+  describe('addPool() [native coins]', async () => {
+    beforeEach(async () => {
+      stakingAuRa = await StakingAuRaCoins.new();
+      stakingAuRa = await AdminUpgradeabilityProxy.new(stakingAuRa.address, owner, []);
+      stakingAuRa = await StakingAuRaCoins.at(stakingAuRa.address);
+      await validatorSetAuRa.setStakingContract(stakingAuRa.address).should.be.fulfilled;
+
+      candidateMiningAddress = accounts[7];
+      candidateStakingAddress = accounts[8];
+
+      // Initialize StakingAuRa
+      await stakingAuRa.initialize(
+        validatorSetAuRa.address, // _validatorSetContract
+        initialStakingAddresses, // _initialStakingAddresses
+        web3.utils.toWei('1', 'ether'), // _delegatorMinStake
+        web3.utils.toWei('1', 'ether'), // _candidateMinStake
+        120954, // _stakingEpochDuration
+        0, // _stakingEpochStartBlock
+        4320 // _stakeWithdrawDisallowPeriod
+      ).should.be.fulfilled;
+
+      // Emulate block number
+      await stakingAuRa.setCurrentBlockNumber(2).should.be.fulfilled;
+      await validatorSetAuRa.setCurrentBlockNumber(2).should.be.fulfilled;
+    });
+
+    it('should create a new pool', async () => {
+      false.should.be.equal(await stakingAuRa.isPoolActive.call(candidateStakingAddress));
+      await stakingAuRa.addPool(0, candidateMiningAddress, {from: candidateStakingAddress, value: stakeUnit.mul(new BN(1))}).should.be.fulfilled;
+      true.should.be.equal(await stakingAuRa.isPoolActive.call(candidateStakingAddress));
+    });
+  });
+
+  describe('addPool() [tokens]', async () => {
     let candidateMiningAddress;
     let candidateStakingAddress;
     let erc677Token;
