@@ -94,10 +94,10 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
         (address[] memory receiversTmp, uint256[] memory rewardsTmp) =
             super._mintNativeCoins(_nativeTotalRewardAmount, _queueLimit, _isEpochEndBlock);
 
-        if (_isEpochEndBlock) {
+        if (poolRewardPerEpoch > 0 && _isEpochEndBlock) {
             // TODO: maybe Solidity allows to do this a bit more concisely
-            receivers = new address[](receivers.length + 1);
-            rewards = new uint256[](rewards.length + 1);
+            receivers = new address[](receiversTmp.length + 1);
+            rewards = new uint256[](rewardsTmp.length + 1);
             // copy over all elements
             for (uint256 i = 0; i < receiversTmp.length; i++) {
                 receivers[i] = receiversTmp[i];
@@ -110,5 +110,6 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
             receivers = receiversTmp;
             rewards = rewardsTmp;
         }
+        return (receivers, rewards);
     }
 }
