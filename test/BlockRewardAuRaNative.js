@@ -17,7 +17,7 @@ require('chai')
   .use(require('chai-bn')(BN))
   .should();
 
-contract('BlockRewardAuRa', async accounts => {
+contract('BlockRewardAuRaCoins', async accounts => {
   let owner;
   let blockRewardAuRa;
   let randomAuRa;
@@ -32,9 +32,9 @@ contract('BlockRewardAuRa', async accounts => {
   const STAKING_EPOCH_START_BLOCK = STAKING_EPOCH_DURATION * 10 + 1;
   const STAKE_WITHDRAW_DISALLOW_PERIOD = 4320;
 
-  const SUSTAINABILITY_POOL = accounts[199];
+  const SUSTAINABILITY_FUND = accounts[199];
   const STAKERS_REWARD_PER_EPOCH = web3.utils.toWei(new BN(21600*2), 'ether');
-  const POOL_REWARD_PER_EPOCH = web3.utils.toWei(new BN(21600), 'ether');
+  const FUND_REWARD_PER_EPOCH = web3.utils.toWei(new BN(21600), 'ether');
 
   describe('reward() [native coin] with epoch rewards enabled', async () => {
     it('network started', async () => {
@@ -90,9 +90,9 @@ contract('BlockRewardAuRa', async accounts => {
       // Initialize BlockRewardAuRa
       await blockRewardAuRa.initialize(
         validatorSetAuRa.address,
-        SUSTAINABILITY_POOL,
+        SUSTAINABILITY_FUND,
         STAKERS_REWARD_PER_EPOCH,
-        POOL_REWARD_PER_EPOCH
+        FUND_REWARD_PER_EPOCH
       ).should.be.fulfilled;
 
       // Initialize RandomAuRa
@@ -212,10 +212,10 @@ contract('BlockRewardAuRa', async accounts => {
       if(brIndex !== -1) {
         emittedRewards.rewards[brIndex].should.be.bignumber.equal(STAKERS_REWARD_PER_EPOCH);
       }
-      const poolIndex = emittedRewards.receivers.indexOf(SUSTAINABILITY_POOL);
-      poolIndex.should.not.be.equal(-1);
-      if(poolIndex !== -1) {
-        emittedRewards.rewards[poolIndex].should.be.bignumber.equal(POOL_REWARD_PER_EPOCH);
+      const fundIndex = emittedRewards.receivers.indexOf(SUSTAINABILITY_FUND);
+      fundIndex.should.not.be.equal(-1);
+      if(fundIndex !== -1) {
+        emittedRewards.rewards[fundIndex].should.be.bignumber.equal(FUND_REWARD_PER_EPOCH);
       }
     });
 
@@ -248,10 +248,10 @@ contract('BlockRewardAuRa', async accounts => {
       if(brIndex !== -1) {
         emittedRewards.rewards[brIndex].should.be.bignumber.equal(STAKERS_REWARD_PER_EPOCH);
       }
-      const poolIndex = emittedRewards.receivers.indexOf(SUSTAINABILITY_POOL);
-      poolIndex.should.not.be.equal(-1);
-      if(poolIndex !== -1) {
-        emittedRewards.rewards[poolIndex].should.be.bignumber.equal(POOL_REWARD_PER_EPOCH);
+      const fundIndex = emittedRewards.receivers.indexOf(SUSTAINABILITY_FUND);
+      fundIndex.should.not.be.equal(-1);
+      if(fundIndex !== -1) {
+        emittedRewards.rewards[fundIndex].should.be.bignumber.equal(FUND_REWARD_PER_EPOCH);
       }
     });
   });

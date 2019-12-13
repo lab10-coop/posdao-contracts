@@ -29,7 +29,7 @@ contract('BlockRewardAuRa', async accounts => {
   const STAKING_EPOCH_START_BLOCK = STAKING_EPOCH_DURATION * 10 + 1;
   const STAKE_WITHDRAW_DISALLOW_PERIOD = 4320;
 
-  const SUSTAINABILITY_POOL = accounts[199];
+  const SUSTAINABILITY_FUND = accounts[199];
   const STAKERS_REWARD_PER_EPOCH = 0; // web3.utils.toWei('21600', 'ether');
   const POOL_REWARD_PER_EPOCH = 0; // web3.utils.toWei('21600', 'ether');
 
@@ -87,7 +87,7 @@ contract('BlockRewardAuRa', async accounts => {
       // Initialize BlockRewardAuRa
       await blockRewardAuRa.initialize(
         validatorSetAuRa.address,
-        SUSTAINABILITY_POOL,
+        SUSTAINABILITY_FUND,
         STAKERS_REWARD_PER_EPOCH,
         POOL_REWARD_PER_EPOCH
       ).should.be.fulfilled;

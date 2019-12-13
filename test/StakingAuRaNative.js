@@ -17,7 +17,7 @@ require('chai')
   .use(require('chai-bn')(BN))
   .should();
 
-contract('StakingAuRa', async accounts => {
+contract('StakingAuRaCoins', async accounts => {
   let owner;
   let initialValidators;
   let initialStakingAddresses;
