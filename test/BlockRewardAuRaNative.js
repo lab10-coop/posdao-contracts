@@ -33,8 +33,9 @@ contract('BlockRewardAuRaCoins', async accounts => {
   const STAKE_WITHDRAW_DISALLOW_PERIOD = 4320;
 
   const SUSTAINABILITY_FUND = accounts[199];
-  const STAKERS_REWARD_PER_EPOCH = web3.utils.toWei(new BN(21600*2), 'ether');
+  const STAKERS_REWARD_PER_EPOCH = web3.utils.toWei(new BN(21600 * 2), 'ether');
   const FUND_REWARD_PER_EPOCH = web3.utils.toWei(new BN(21600), 'ether');
+  const UPDATED_SUSTAINABILITY_FUND = accounts[198];
 
   describe('reward() [native coin] with epoch rewards enabled', async () => {
     it('network started', async () => {
@@ -235,6 +236,15 @@ contract('BlockRewardAuRaCoins', async accounts => {
       emittedRewards.receivers.length.should.be.equal(0);
     });
 
+    it('  only owner can change sustainability fund', async () => {
+      // should fail from random address
+      await blockRewardAuRa.setSustainabilityFund(UPDATED_SUSTAINABILITY_FUND, {from: accounts[100]}).should.not.be.fulfilled;
+      // should succeed for owner
+      const {logs} = await blockRewardAuRa.setSustainabilityFund(UPDATED_SUSTAINABILITY_FUND, {from: owner}).should.be.fulfilled;
+      logs[0].event.should.be.equal("SustainabilityFundChanged");
+      logs[0].args.newAddress.should.be.equal(UPDATED_SUSTAINABILITY_FUND);
+    });
+
     it('staking epoch #2 finished', async () => {
       const stakingEpoch = await stakingAuRa.stakingEpoch.call();
       stakingEpoch.should.be.bignumber.equal(new BN(2));
@@ -248,7 +258,7 @@ contract('BlockRewardAuRaCoins', async accounts => {
       if(brIndex !== -1) {
         emittedRewards.rewards[brIndex].should.be.bignumber.equal(STAKERS_REWARD_PER_EPOCH);
       }
-      const fundIndex = emittedRewards.receivers.indexOf(SUSTAINABILITY_FUND);
+      const fundIndex = emittedRewards.receivers.indexOf(UPDATED_SUSTAINABILITY_FUND);
       fundIndex.should.not.be.equal(-1);
       if(fundIndex !== -1) {
         emittedRewards.rewards[fundIndex].should.be.bignumber.equal(FUND_REWARD_PER_EPOCH);
@@ -256,7 +266,7 @@ contract('BlockRewardAuRaCoins', async accounts => {
     });
   });
 
-    // ===================================== HELPER FUNCTIONS =====================================
+  // ===================================== HELPER FUNCTIONS =====================================
 
   Array.prototype.sortedEqual = function(arr) {
     [...this].sort().should.be.deep.equal([...arr].sort());

@@ -132,6 +132,9 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// is equal to the length of the `receivers` array.
     event MintedNative(address[] receivers, uint256[] rewards);
 
+    /// @dev Emitted when the sustainability fund (receives rewards per epoch) is changed
+    event SustainabilityFundChanged(address newAddress);
+
     // ============================================== Modifiers =======================================================
 
     /// @dev Ensures the caller is the `erc-to-native` bridge contract address.
@@ -360,6 +363,12 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
         for (i = 0; i < _bridgesAllowed.length; i++) {
             _ercToNativeBridgeAllowed[_bridgesAllowed[i]] = true;
         }
+    }
+
+    function setSustainabilityFund(address newAddr) external onlyOwner onlyInitialized {
+        require(newAddr != address(0));
+        sustainabilityFund = newAddr;
+        emit SustainabilityFundChanged(newAddr);
     }
 
     // =============================================== Getters ========================================================
