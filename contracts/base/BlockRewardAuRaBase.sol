@@ -98,14 +98,14 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// @dev The address of the `ValidatorSet` contract.
     IValidatorSetAuRa public validatorSetContract;
 
-    /// @dev address of the sustainability pool
-    address public sustainabilityPool;
+    /// @dev address of the sustainability fund
+    address public sustainabilityFund;
 
     /// @dev reward amount emitted overall among stakers (includes pool owners) per epoch
     uint256 public stakersRewardPerEpoch;
 
-    /// @dev reward amount emitted to the sustainability pool per epoch
-    uint256 public poolRewardPerEpoch;
+    /// @dev reward amount emitted to the sustainability fund per epoch
+    uint256 public fundRewardPerEpoch;
 
     // ================================================ Events ========================================================
 
@@ -208,21 +208,21 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// @param _validatorSet The address of the `ValidatorSetAuRa` contract.
     function initialize(
         address _validatorSet,
-        address _sustainabilityPool,
+        address _sustainabilityFund,
         uint256 _stakersRewardPerEpoch,
-        uint256 _poolRewardPerEpoch
+        uint256 _fundRewardPerEpoch
     ) external {
         require(_getCurrentBlockNumber() == 0 || msg.sender == _admin());
         require(!isInitialized());
         require(_validatorSet != address(0));
-        if(_poolRewardPerEpoch != 0) {
-            require(_sustainabilityPool != address (0));
+        if(_fundRewardPerEpoch != 0) {
+            require(_sustainabilityFund != address (0));
         }
         validatorSetContract = IValidatorSetAuRa(_validatorSet);
         validatorMinRewardPercent[0] = VALIDATOR_MIN_REWARD_PERCENT;
-        sustainabilityPool = _sustainabilityPool;
+        sustainabilityFund = _sustainabilityFund;
         stakersRewardPerEpoch = _stakersRewardPerEpoch;
-        poolRewardPerEpoch = _poolRewardPerEpoch;
+        fundRewardPerEpoch = _fundRewardPerEpoch;
     }
 
     /// @dev Copies the minting statistics from the previous BlockReward contract

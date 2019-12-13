@@ -85,7 +85,7 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
         ) + stakersRewardPerEpoch;
     }
 
-    // override: adds the sustainability pool reward at every epoch end
+    // override: adds the sustainability fund reward at every epoch end
     function _mintNativeCoins(
         uint256 _nativeTotalRewardAmount,
         uint256 _queueLimit,
@@ -94,7 +94,7 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
         (address[] memory receiversTmp, uint256[] memory rewardsTmp) =
             super._mintNativeCoins(_nativeTotalRewardAmount, _queueLimit, _isEpochEndBlock);
 
-        if (poolRewardPerEpoch > 0 && _isEpochEndBlock) {
+        if (fundRewardPerEpoch > 0 && _isEpochEndBlock) {
             // TODO: maybe Solidity allows to do this a bit more concisely
             receivers = new address[](receiversTmp.length + 1);
             rewards = new uint256[](rewardsTmp.length + 1);
@@ -104,8 +104,8 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
                 rewards[i] = rewardsTmp[i];
             }
             // add the pool
-            receivers[receivers.length-1] = sustainabilityPool;
-            rewards[rewards.length-1] = poolRewardPerEpoch;
+            receivers[receivers.length-1] = sustainabilityFund;
+            rewards[rewards.length-1] = fundRewardPerEpoch;
         } else {
             receivers = receiversTmp;
             rewards = rewardsTmp;

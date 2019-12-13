@@ -341,9 +341,8 @@ contract('StakingAuRa', async accounts => {
       // Initialize BlockRewardAuRa
       await blockRewardAuRa.initialize(
         validatorSetAuRa.address,
-        validatorSetAuRa.address,
-        '0x0000000000000000000000000000000000000000', // sustainability pool
-        0, // pool reward per epoch
+        '0x0000000000000000000000000000000000000000', // sustainability fund
+        0, // fund reward per epoch
         0 // stakers reward per epoch
       ).should.be.fulfilled;
 
