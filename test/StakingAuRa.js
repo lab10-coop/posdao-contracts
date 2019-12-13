@@ -59,6 +59,8 @@ contract('StakingAuRa', async accounts => {
   });
 
   describe('addPool() [native coins]', async () => {
+    const stakeUnit = new BN(web3.utils.toWei('1', 'ether'));
+
     beforeEach(async () => {
       stakingAuRa = await StakingAuRaCoins.new();
       stakingAuRa = await AdminUpgradeabilityProxy.new(stakingAuRa.address, owner, []);
@@ -156,16 +158,16 @@ contract('StakingAuRa', async accounts => {
     it('should fail if the pool with the same mining/staking address is already existed', async () => {
       const candidateMiningAddress2 = accounts[9];
       const candidateStakingAddress2 = accounts[10];
-      
+
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateMiningAddress, {from: candidateStakingAddress}).should.be.fulfilled;
-      
+
       await erc677Token.mint(candidateMiningAddress, stakeUnit.mul(new BN(2)), {from: owner}).should.be.fulfilled;
       await erc677Token.mint(candidateMiningAddress2, stakeUnit.mul(new BN(2)), {from: owner}).should.be.fulfilled;
       await erc677Token.mint(candidateStakingAddress2, stakeUnit.mul(new BN(2)), {from: owner}).should.be.fulfilled;
 
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateMiningAddress, {from: candidateStakingAddress2}).should.be.rejectedWith(ERROR_MSG);
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateMiningAddress2, {from: candidateStakingAddress}).should.be.rejectedWith(ERROR_MSG);
-      
+
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateStakingAddress, {from: candidateMiningAddress2}).should.be.rejectedWith(ERROR_MSG);
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateStakingAddress2, {from: candidateMiningAddress}).should.be.rejectedWith(ERROR_MSG);
 
@@ -174,7 +176,7 @@ contract('StakingAuRa', async accounts => {
 
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateStakingAddress, {from: candidateStakingAddress2}).should.be.rejectedWith(ERROR_MSG);
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateStakingAddress2, {from: candidateStakingAddress}).should.be.rejectedWith(ERROR_MSG);
-      
+
       await stakingAuRa.addPool(stakeUnit.mul(new BN(1)), candidateMiningAddress2, {from: candidateStakingAddress2}).should.be.fulfilled;
     });
     it('should fail if gasPrice is 0', async () => {
@@ -338,7 +340,11 @@ contract('StakingAuRa', async accounts => {
     beforeEach(async () => {
       // Initialize BlockRewardAuRa
       await blockRewardAuRa.initialize(
-        validatorSetAuRa.address
+        validatorSetAuRa.address,
+        validatorSetAuRa.address,
+        '0x0000000000000000000000000000000000000000', // sustainability pool
+        0, // pool reward per epoch
+        0 // stakers reward per epoch
       ).should.be.fulfilled;
 
       // Initialize RandomAuRa
@@ -1478,7 +1484,7 @@ contract('StakingAuRa', async accounts => {
       blockRewardTokensBalanceTotalAfter.should.be.bignumber.gte(new BN(0));
       blockRewardCoinsBalanceTotalAfter.should.be.bignumber.gte(new BN(0));
     });
-    
+
     it('gas consumption for 52 staking epochs (1 continuous year) is OK', async () => {
       const maxStakingEpoch = 52;
 
@@ -2177,10 +2183,10 @@ contract('StakingAuRa', async accounts => {
 
       (await stakingAuRa.stakeAmount.call(sourcePool, delegatorAddress)).should.be.bignumber.equal(mintAmount);
       (await stakingAuRa.stakeAmount.call(targetPool, delegatorAddress)).should.be.bignumber.equal(mintAmount);
-      
+
       const moveAmount = stakeUnit.div(new BN(2));
       moveAmount.should.be.bignumber.below(await stakingAuRa.delegatorMinStake.call());
-      
+
       await stakingAuRa.moveStake(sourcePool, targetPool, moveAmount, {from: delegatorAddress}).should.be.fulfilled;
       (await stakingAuRa.stakeAmount.call(sourcePool, delegatorAddress)).should.be.bignumber.equal(mintAmount.sub(moveAmount));
       (await stakingAuRa.stakeAmount.call(targetPool, delegatorAddress)).should.be.bignumber.equal(mintAmount.add(moveAmount));
@@ -2864,7 +2870,7 @@ contract('StakingAuRa', async accounts => {
       (await stakingAuRa.stakingEpoch.call()).should.be.bignumber.equal(new BN(1));
 
       // Finalize a new validator set
-      await blockRewardAuRa.initialize(validatorSetAuRa.address).should.be.fulfilled;
+      await blockRewardAuRa.initialize(validatorSetAuRa.address, '0x0000000000000000000000000000000000000000', 0, 0).should.be.fulfilled;
       await validatorSetAuRa.emitInitiateChange().should.be.fulfilled;
       await validatorSetAuRa.finalizeChange({from: owner}).should.be.fulfilled;
 
@@ -2949,7 +2955,7 @@ contract('StakingAuRa', async accounts => {
     const validators = await validatorSetAuRa.getValidators.call();
     await blockRewardAuRa.setSystemAddress(owner).should.be.fulfilled;
     const {logs} = await blockRewardAuRa.reward([validators[0]], [0], {from: owner}).should.be.fulfilled;
-    
+
     // Emulate minting native coins
     logs[0].event.should.be.equal("MintedNative");
     const receivers = logs[0].args.receivers;
