@@ -94,6 +94,15 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// @dev The address of the `ValidatorSet` contract.
     IValidatorSetAuRa public validatorSetContract;
 
+    /// @dev address of the sustainability pool
+    address public sustainabilityPool;
+
+    /// @dev reward amount emitted overall among stakers (includes pool owners) per epoch
+    uint256 public stakersRewardPerEpoch;
+
+    /// @dev reward amount emitted to the sustainability pool per epoch
+    uint256 public poolRewardPerEpoch;
+
     // ================================================ Events ========================================================
 
     /// @dev Emitted by the `addExtraReceiver` function.
@@ -193,12 +202,23 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// @dev Initializes the contract at network startup.
     /// Can only be called by the constructor of the `InitializerAuRa` contract or owner.
     /// @param _validatorSet The address of the `ValidatorSetAuRa` contract.
-    function initialize(address _validatorSet) external {
+    function initialize(
+        address _validatorSet,
+        address _sustainabilityPool,
+        uint256 _stakersRewardPerEpoch,
+        uint256 _poolRewardPerEpoch
+    ) external {
         require(_getCurrentBlockNumber() == 0 || msg.sender == _admin());
         require(!isInitialized());
         require(_validatorSet != address(0));
+        if(_poolRewardPerEpoch != 0) {
+            require(_sustainabilityPool != address (0));
+        }
         validatorSetContract = IValidatorSetAuRa(_validatorSet);
         validatorMinRewardPercent[0] = VALIDATOR_MIN_REWARD_PERCENT;
+        sustainabilityPool = _sustainabilityPool;
+        stakersRewardPerEpoch = _stakersRewardPerEpoch;
+        poolRewardPerEpoch = _poolRewardPerEpoch;
     }
 
     /// @dev Copies the minting statistics from the previous BlockReward contract
@@ -312,10 +332,13 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
 
             // Pause bridge for this block
             bridgeQueueLimit = 0;
+
+            // Mint native coins if needed
+            return _mintNativeCoins(nativeTotalRewardAmount, bridgeQueueLimit, true);
         }
 
         // Mint native coins if needed
-        return _mintNativeCoins(nativeTotalRewardAmount, bridgeQueueLimit);
+        return _mintNativeCoins(nativeTotalRewardAmount, bridgeQueueLimit, false);
     }
 
     /// @dev Sets the array of `erc-to-native` bridge addresses which are allowed to call some of the functions with
@@ -458,7 +481,7 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
 
             address[] memory miningAddresses;
             uint256 i;
-            
+
             miningAddresses = validatorSetContract.getPendingValidators();
             for (i = 0; i < miningAddresses.length; i++) {
                 if (miningAddress == miningAddresses[i]) {
@@ -694,7 +717,8 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     /// `addExtraReceiver` function.
     function _mintNativeCoins(
         uint256 _nativeTotalRewardAmount,
-        uint256 _queueLimit
+        uint256 _queueLimit,
+        bool // relevant only for overriding implementations
     )
         internal
         returns(address[] memory receivers, uint256[] memory rewards)

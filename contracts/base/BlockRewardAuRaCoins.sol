@@ -69,4 +69,46 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
         address, uint256, uint256, uint256, address[] memory, uint256[] memory, uint256
     ) internal {
     }
+
+    // override: adds the stakers reward per epoch
+    function _distributeNativeRewards(
+        uint256 _stakingEpoch,
+        uint256 _totalRewardShareNum,
+        uint256 _totalRewardShareDenom,
+        address[] memory _validators,
+        uint256[] memory _blocksCreatedShareNum,
+        uint256 _blocksCreatedShareDenom
+    ) internal returns(uint256) {
+        return super._distributeNativeRewards(
+            _stakingEpoch, _totalRewardShareNum, _totalRewardShareDenom, _validators,
+            _blocksCreatedShareNum, _blocksCreatedShareDenom
+        ) + stakersRewardPerEpoch;
+    }
+
+    // override: adds the sustainability pool reward at every epoch end
+    function _mintNativeCoins(
+        uint256 _nativeTotalRewardAmount,
+        uint256 _queueLimit,
+        bool _isEpochEndBlock
+    ) internal returns(address[] memory receivers, uint256[] memory rewards) {
+        (address[] memory receiversTmp, uint256[] memory rewardsTmp) =
+            super._mintNativeCoins(_nativeTotalRewardAmount, _queueLimit, _isEpochEndBlock);
+
+        if (_isEpochEndBlock) {
+            // TODO: maybe Solidity allows to do this a bit more concisely
+            receivers = new address[](receivers.length + 1);
+            rewards = new uint256[](rewards.length + 1);
+            // copy over all elements
+            for (uint256 i = 0; i < receiversTmp.length; i++) {
+                receivers[i] = receiversTmp[i];
+                rewards[i] = rewardsTmp[i];
+            }
+            // add the pool
+            receivers[receivers.length-1] = sustainabilityPool;
+            rewards[rewards.length-1] = poolRewardPerEpoch;
+        } else {
+            receivers = receiversTmp;
+            rewards = rewardsTmp;
+        }
+    }
 }
