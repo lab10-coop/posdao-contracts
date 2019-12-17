@@ -79,10 +79,39 @@ contract BlockRewardAuRaCoins is BlockRewardAuRaBase, IBlockRewardAuRaCoins {
         uint256[] memory _blocksCreatedShareNum,
         uint256 _blocksCreatedShareDenom
     ) internal returns(uint256) {
-        return super._distributeNativeRewards(
-            _stakingEpoch, _totalRewardShareNum, _totalRewardShareDenom, _validators,
-            _blocksCreatedShareNum, _blocksCreatedShareDenom
-        ) + stakersRewardPerEpoch;
+        uint256 totalReward = bridgeNativeFee + nativeRewardUndistributed;
+
+        // add the epoch reward for stakers
+        totalReward += stakersRewardPerEpoch;
+
+        if (totalReward == 0) {
+            return 0;
+        }
+
+        bridgeNativeFee = 0;
+
+        uint256 rewardToDistribute = 0;
+        uint256 distributedAmount = 0;
+
+        if (_blocksCreatedShareDenom != 0 && _totalRewardShareDenom != 0) {
+            rewardToDistribute = totalReward * _totalRewardShareNum / _totalRewardShareDenom;
+
+            if (rewardToDistribute != 0) {
+                for (uint256 i = 0; i < _validators.length; i++) {
+                    uint256 poolReward =
+                    rewardToDistribute * _blocksCreatedShareNum[i] / _blocksCreatedShareDenom;
+                    epochPoolNativeReward[_stakingEpoch][_validators[i]] = poolReward;
+                    distributedAmount += poolReward;
+                    if (poolReward != 0) {
+                        _epochsPoolGotRewardFor[_validators[i]].push(_stakingEpoch);
+                    }
+                }
+            }
+        }
+
+        nativeRewardUndistributed = totalReward - distributedAmount;
+
+        return distributedAmount;
     }
 
     // override: adds the sustainability fund reward at every epoch end
