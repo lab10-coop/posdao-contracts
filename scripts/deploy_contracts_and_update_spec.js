@@ -33,9 +33,9 @@ async function main() {
   const specFile = process.env.SPEC_FILE;
   const forkBlock = parseInt(process.env.FORK_BLOCK);
 
-  const sustainabilityFund = process.env.SUSTAINABILITY_FUND;
-  const stakersRewardPerBlock = process.env.STAKERS_REWARD_PER_EPOCH;
-  const fundRewardPerBlock = process.env.FUND_REWARD_PER_EPOCH;
+  const sustainabilityFund = process.env.SUSTAINABILITY_FUND || '0x0000000000000000000000000000000000000000';
+  const stakersRewardPerBlockATS = process.env.STAKERS_REWARD_PER_EPOCH_ATS || 0;
+  const fundRewardPerBlockATS = process.env.FUND_REWARD_PER_EPOCH_ATS || 0;
 
   const contracts = {
     ValidatorSetAuRa: { withProxy: true},
@@ -190,8 +190,8 @@ async function main() {
   contracts.BlockRewardAuRa.initReceipt = await contracts.BlockRewardAuRa.proxiedImplementationInstance.methods.initialize(
     contracts.ValidatorSetAuRa.proxyAddress,
     sustainabilityFund,
-    stakersRewardPerBlock,
-    fundRewardPerBlock
+    web3.utils.toWei(stakersRewardPerBlockATS),
+    web3.utils.toWei(fundRewardPerBlockATS)
   ).send(sendOpts);
 
   contracts.RandomAuRa.initReceipt = await contracts.RandomAuRa.proxiedImplementationInstance.methods.initialize(
