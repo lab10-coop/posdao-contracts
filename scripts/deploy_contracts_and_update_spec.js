@@ -15,6 +15,7 @@ main();
 
 async function main() {
   const rpcUrl = process.env.RPC_URL || "http://localhost:8545";
+  console.log(`owner is ${process.env.OWNER}`);
   const owner = process.env.OWNER.trim();
   let initialValidators = process.env.INITIAL_VALIDATORS.split(',');
   for (let i = 0; i < initialValidators.length; i++) {
@@ -29,13 +30,33 @@ async function main() {
   const stakeWithdrawDisallowPeriod = process.env.STAKE_WITHDRAW_DISALLOW_PERIOD;
   const collectRoundLength = process.env.COLLECT_ROUND_LENGTH;
   const erc20Restricted = process.env.ERC20_RESTRICTED === 'true';
+  console.assert(collectRoundLength % 2 === 0, 'COLLECT_ROUND_LENGTH not even');
+  console.assert(stakingEpochDuration % collectRoundLength === 0, `STAKING_EPOCH_DURATION (${stakingEpochDuration}) is not a multiple of COLLECT_ROUND_LENGTH (${collectRoundLength})`);
+
+  const candidateMinStake = process.env.CANDIDATE_MIN_STAKE || 1;
+  const delegatorMinStake = process.env.DELEGATOR_MIN_STAKE || 1;
+  console.assert(parseInt(candidateMinStake) > 0, `CANDIDATE_MIN_STAKE (${candidateMinStake}) not valid`);
+  console.assert(parseInt(delegatorMinStake) > 0, `DELEGATOR_MIN_STAKE (${delegatorMinStake}) not valid`);
+
+  const maxValidatorsWanted = parseInt(process.env.MAX_VALIDATORS) || undefined;
+
+  if(maxValidatorsWanted) {
+    console.assert((maxValidatorsWanted - 1) % 3 === 0, `MAX_VALIDATORS (${maxValidatorsWanted}) is not 3f + 1 for any f`);
+    console.assert(collectRoundLength % maxValidatorsWanted === 0, `COLLECT_ROUND_LENGTH (${collectRoundLength}) is not a multiple of MAX_VALIDATORS ${maxValidatorsWanted}`);
+  } else {
+    console.log('skipping check of MAX_VALIDATORS (not set in env)');
+  }
 
   const specFile = process.env.SPEC_FILE;
   const forkBlock = parseInt(process.env.FORK_BLOCK);
+  // implies forkBlock % collectRoundLength === 0
+  console.assert(forkBlock % stakingEpochDuration === 0, `FORK_BLOCK (${forkBlock}) is not a multiple of COLLECT_ROUND_LENGTH (${collectRoundLength})`);
 
   const sustainabilityFund = process.env.SUSTAINABILITY_FUND || '0x0000000000000000000000000000000000000000';
-  const stakersRewardPerBlockATS = process.env.STAKERS_REWARD_PER_EPOCH_ATS || 0;
-  const fundRewardPerBlockATS = process.env.FUND_REWARD_PER_EPOCH_ATS || 0;
+  const stakersRewardPerBlock = process.env.STAKERS_REWARD_PER_EPOCH || 0;
+  const fundRewardPerBlock = process.env.FUND_REWARD_PER_EPOCH || 0;
+  console.assert(parseInt(stakersRewardPerBlock) >= 0, `STAKERS_REWARD_PER_EPOCH (${stakersRewardPerBlock}) not valid`);
+  console.assert(parseInt(fundRewardPerBlock) >= 0, `FUND_REWARD_PER_EPOCH (${fundRewardPerBlock}) not valid`);
 
   const contracts = {
     ValidatorSetAuRa: { withProxy: true},
@@ -168,6 +189,7 @@ async function main() {
   // initialize the contracts...
   // This replicates the actions of the InitializerAuRa contract
   console.log('initializing deployed contracts...');
+  console.log(`ValidatorSetAuRa: ${contracts.BlockRewardAuRa.proxyAddress}, ${contracts.RandomAuRa.proxyAddress}, ${contracts.StakingAuRa.proxyAddress}, ${initialValidators}, ${stakingAddresses}, ${firstValidatorIsUnremovable}`);
   contracts.ValidatorSetAuRa.initReceipt = await contracts.ValidatorSetAuRa.proxiedImplementationInstance.methods.initialize(
     contracts.BlockRewardAuRa.proxyAddress,
     contracts.RandomAuRa.proxyAddress,
@@ -176,24 +198,31 @@ async function main() {
     stakingAddresses,
     firstValidatorIsUnremovable
   ).send(sendOpts);
+  if (maxValidatorsWanted) {
+    const maxValidatorsDeployed = parseInt(await contracts.ValidatorSetAuRa.proxiedImplementationInstance.methods.MAX_VALIDATORS().call());
+    console.assert(maxValidatorsDeployed === maxValidatorsWanted, `deployed MAX_VALIDATORS (${maxValidatorsDeployed}) not equal specified MAX_VALIDATORS (${maxValidatorsDeployed}). Check the contract source!`);
+  }
 
+  console.log('StakingAuRa...');
   contracts.StakingAuRa.initReceipt = await contracts.StakingAuRa.proxiedImplementationInstance.methods.initialize(
     contracts.ValidatorSetAuRa.proxyAddress,
     stakingAddresses,
-    web3.utils.toWei('1', 'ether'), // _delegatorMinStake
-    web3.utils.toWei('1', 'ether'), // _candidateMinStake
+    web3.utils.toWei(delegatorMinStake, 'ether'), // _delegatorMinStake
+    web3.utils.toWei(candidateMinStake, 'ether'), // _candidateMinStake
     stakingEpochDuration,
     forkBlock, // _stakingEpochStartBlock
     stakeWithdrawDisallowPeriod
   ).send(sendOpts);
 
+  console.log('BlockRewardAuRa...');
   contracts.BlockRewardAuRa.initReceipt = await contracts.BlockRewardAuRa.proxiedImplementationInstance.methods.initialize(
     contracts.ValidatorSetAuRa.proxyAddress,
     sustainabilityFund,
-    web3.utils.toWei(stakersRewardPerBlockATS),
-    web3.utils.toWei(fundRewardPerBlockATS)
+    web3.utils.toWei(stakersRewardPerBlock),
+    web3.utils.toWei(fundRewardPerBlock)
   ).send(sendOpts);
 
+  console.log('RandomAuRa...');
   contracts.RandomAuRa.initReceipt = await contracts.RandomAuRa.proxiedImplementationInstance.methods.initialize(
     collectRoundLength,
     contracts.ValidatorSetAuRa.proxyAddress
