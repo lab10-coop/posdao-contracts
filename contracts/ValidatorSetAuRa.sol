@@ -32,7 +32,6 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
     bool internal _pendingValidatorsChangedForNewEpoch;
 
     mapping(address => mapping(uint256 => address[])) internal _maliceReportedForBlock;
-    mapping(address => mapping(uint256 => mapping(address => bool))) internal _maliceReportedForBlockMapped;
 
     /// @dev How many times a given mining address was banned.
     mapping(address => uint256) public banCounter;
@@ -99,6 +98,8 @@ contract ValidatorSetAuRa is UpgradeabilityAdmin, IValidatorSetAuRa {
     /// it means the `newValidatorSet` function has already been called (a new staking epoch has been started),
     /// but the new staking epoch's validator set hasn't yet been finalized by the `finalizeChange` function.
     uint256 public validatorSetApplyBlock;
+
+    mapping(address => mapping(uint256 => mapping(address => bool))) internal _maliceReportedForBlockMapped;
 
     // ============================================== Constants =======================================================
 

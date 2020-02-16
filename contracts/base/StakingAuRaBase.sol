@@ -26,12 +26,7 @@ contract StakingAuRaBase is UpgradeableOwned, IStakingAuRa {
     uint256 internal _poolsLikelihoodSum;
     mapping(address => address[]) internal _poolDelegators;
     mapping(address => address[]) internal _poolDelegatorsInactive;
-    mapping(address => address[]) internal _stakerPools;
-    mapping(address => mapping(address => uint256)) internal _stakerPoolsIndexes;
     mapping(address => mapping(address => mapping(uint256 => uint256))) internal _stakeAmountByEpoch;
-
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[25] private ______gapForInternal;
 
     /// @dev The limit of the minimum candidate stake (CANDIDATE_MIN_STAKE).
     uint256 public candidateMinStake;
@@ -142,8 +137,8 @@ contract StakingAuRaBase is UpgradeableOwned, IStakingAuRa {
     /// @dev The address of the `ValidatorSetAuRa` contract.
     IValidatorSetAuRa public validatorSetContract;
 
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[25] private ______gapForPublic;
+    mapping(address => address[]) internal _stakerPools;
+    mapping(address => mapping(address => uint256)) internal _stakerPoolsIndexes;
 
     // ============================================== Constants =======================================================
 
@@ -1041,7 +1036,7 @@ contract StakingAuRaBase is UpgradeableOwned, IStakingAuRa {
         }
 
         stakeAmount[_poolStakingAddress][_staker] = newStakeAmount;
-        _stakeAmountByEpoch[_poolStakingAddress][_staker][stakingEpoch] = 
+        _stakeAmountByEpoch[_poolStakingAddress][_staker][stakingEpoch] =
             stakeAmountByCurrentEpoch(_poolStakingAddress, _staker).add(_amount);
         stakeAmountTotal[_poolStakingAddress] = stakeAmountTotal[_poolStakingAddress].add(_amount);
 
@@ -1088,7 +1083,7 @@ contract StakingAuRaBase is UpgradeableOwned, IStakingAuRa {
 
         stakeAmount[_poolStakingAddress][_staker] = newStakeAmount;
         uint256 amountByEpoch = stakeAmountByCurrentEpoch(_poolStakingAddress, _staker);
-        _stakeAmountByEpoch[_poolStakingAddress][_staker][stakingEpoch] = 
+        _stakeAmountByEpoch[_poolStakingAddress][_staker][stakingEpoch] =
             amountByEpoch >= _amount ? amountByEpoch - _amount : 0;
         stakeAmountTotal[_poolStakingAddress] = stakeAmountTotal[_poolStakingAddress].sub(_amount);
 

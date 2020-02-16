@@ -39,9 +39,6 @@ contract BlockRewardAuRaBase is UpgradeableOwned, IBlockRewardAuRa {
     }
     mapping(uint256 => ExtraReceiverQueue) internal _queueER;
 
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[25] private ______gapForInternal;
-
     /// @dev A number of blocks produced by the specified validator during the specified staking epoch
     /// (beginning from the block when the `finalizeChange` function is called until the latest block
     /// of the staking epoch. The results are used by the `_distributeRewards` function to track
