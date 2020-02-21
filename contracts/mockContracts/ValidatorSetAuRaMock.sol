@@ -8,6 +8,11 @@ contract ValidatorSetAuRaMock is ValidatorSetAuRa {
     uint256 internal _currentBlockNumber;
     address internal _systemAddress;
 
+    // ============================================== Constants =======================================================
+
+    // the tests assume this value to be set
+    uint256 public constant MAX_VALIDATORS = 19;
+
     // ============================================== Modifiers =======================================================
 
     modifier onlySystem() {
