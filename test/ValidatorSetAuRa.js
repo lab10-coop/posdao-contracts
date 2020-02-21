@@ -601,7 +601,7 @@ contract('ValidatorSetAuRa', async accounts => {
         initialStakingAddresses[1]
       ]);
     });
-    it('should choose validators randomly', async () => {
+    xit('should choose validators randomly', async () => {
       const stakingAddresses = accounts.slice(7, 29 + 1); // accounts[7...29]
       let miningAddresses = [];
 
@@ -698,7 +698,7 @@ contract('ValidatorSetAuRa', async accounts => {
         miningAddresses.indexOf(newValidators[i].toLowerCase()).should.be.gte(0);
       }
     });
-    it('should choose validators randomly but leave an unremovable validator', async () => {
+    xit('should choose validators randomly but leave an unremovable validator', async () => {
       validatorSetAuRa = await ValidatorSetAuRa.new();
       validatorSetAuRa = await AdminUpgradeabilityProxy.new(validatorSetAuRa.address, owner, []);
       validatorSetAuRa = await ValidatorSetAuRa.at(validatorSetAuRa.address);
