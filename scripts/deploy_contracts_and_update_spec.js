@@ -33,8 +33,8 @@ async function main() {
   console.assert(collectRoundLength % 2 === 0, 'COLLECT_ROUND_LENGTH not even');
   console.assert(stakingEpochDuration % collectRoundLength === 0, `STAKING_EPOCH_DURATION (${stakingEpochDuration}) is not a multiple of COLLECT_ROUND_LENGTH (${collectRoundLength})`);
 
-  const candidateMinStake = process.env.CANDIDATE_MIN_STAKE || 1;
-  const delegatorMinStake = process.env.DELEGATOR_MIN_STAKE || 1;
+  const candidateMinStake = process.env.CANDIDATE_MIN_STAKE || '1';
+  const delegatorMinStake = process.env.DELEGATOR_MIN_STAKE || '1';
   console.assert(parseInt(candidateMinStake) > 0, `CANDIDATE_MIN_STAKE (${candidateMinStake}) not valid`);
   console.assert(parseInt(delegatorMinStake) > 0, `DELEGATOR_MIN_STAKE (${delegatorMinStake}) not valid`);
 
@@ -178,6 +178,7 @@ async function main() {
   spec.engine.authorityRound.params.blockGasLimitContractTransitions = {}; // assumes it doesn't exist yet
   // this is included in the TxPermission contract
   spec.engine.authorityRound.params.blockGasLimitContractTransitions[forkBlock] = contracts['TxPermission'].proxyAddress;
+  spec.engine.authorityRound.params.randomnessContractAddress = {}; // assumes it doesn't exist yet
   spec.engine.authorityRound.params.randomnessContractAddress[forkBlock] = contracts['RandomAuRa'].proxyAddress;
   spec.params.transactionPermissionContract = contracts['TxPermission'].proxyAddress;
   spec.params.transactionPermissionContractTransition = forkBlock;
@@ -200,7 +201,7 @@ async function main() {
   ).send(sendOpts);
   if (maxValidatorsWanted) {
     const maxValidatorsDeployed = parseInt(await contracts.ValidatorSetAuRa.proxiedImplementationInstance.methods.MAX_VALIDATORS().call());
-    console.assert(maxValidatorsDeployed === maxValidatorsWanted, `deployed MAX_VALIDATORS (${maxValidatorsDeployed}) not equal specified MAX_VALIDATORS (${maxValidatorsDeployed}). Check the contract source!`);
+    console.assert(maxValidatorsDeployed === maxValidatorsWanted, `deployed MAX_VALIDATORS (${maxValidatorsDeployed}) not equal specified MAX_VALIDATORS (${maxValidatorsWanted}). Check the contract source!`);
   }
 
   console.log('StakingAuRa...');
