@@ -106,11 +106,11 @@ async function main() {
       owner,
       []
     ]});
-  spec.engine.hbbft.params.validators.multi = {
-    "0": {
-      "contract": VALIDATOR_SET_CONTRACT
-    }
-  };
+  // spec.engine.hbbft.params.validators.multi = {
+  //   "0": {
+  //     "contract": VALIDATOR_SET_CONTRACT
+  //   }
+  // };
   spec.accounts[VALIDATOR_SET_CONTRACT] = {
     balance: '0',
     constructor: await deploy.encodeABI()
@@ -145,8 +145,8 @@ async function main() {
     balance: '0',
     constructor: await deploy.encodeABI()
   };
-  spec.engine.hbbft.params.blockRewardContractAddress = BLOCK_REWARD_CONTRACT;
-  spec.engine.hbbft.params.blockRewardContractTransition = 0;
+  //spec.engine.hbbft.params.blockRewardContractAddress = BLOCK_REWARD_CONTRACT;
+  //spec.engine.hbbft.params.blockRewardContractTransition = 0;
   spec.accounts['0x2000000000000000000000000000000000000000'] = {
     balance: '0',
     constructor: '0x' + contractsCompiled['BlockRewardHbbft'].bytecode
@@ -166,7 +166,7 @@ async function main() {
     balance: '0',
     constructor: '0x' + contractsCompiled['RandomHbbft'].bytecode
   };
-  spec.engine.hbbft.params.randomnessContractAddress = RANDOM_CONTRACT;
+  //spec.engine.hbbft.params.randomnessContractAddress = RANDOM_CONTRACT;
 
   // Build TxPermission contract
   deploy = await contract.deploy({data: '0x' + storageProxyCompiled.bytecode, arguments: [
